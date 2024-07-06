@@ -1,0 +1,31 @@
+module top(input   logic 	 clk, reset,            
+	       output  logic[31:0] writedata, dataadr, //data in rt register, alu result
+	       output  logic[31:0] readdata,           //data in alu result addr
+	       output  logic       memwrite,           //write enable
+	       output logic[31:0] instr, pc);    
+
+   // instantiate processor and memories  
+   mips mips (clk, reset, pc, instr, memwrite, dataadr, writedata, readdata);  
+   imem imem (pc[7:0], instr);  
+   dmem dmem (clk, memwrite, dataadr, writedata, readdata);
+endmodule
+
+module top_test();
+    reg clk, reset;
+    wire[31:0] instr, pc;
+    wire[31:0] writedata, dataadr, readdata;
+    wire memwrite;
+    
+    top top1(.clk(clk), .reset(reset), .writedata(writedata), 
+             .dataadr(dataadr), .readdata(readdata), 
+             .memwrite(memwrite), .instr(instr), .pc(pc));
+                
+    always #5 clk = ~clk;
+
+    initial begin
+        clk = 0; reset = 1;
+        #10;
+        reset = 0;
+        #100;
+    end       
+endmodule
