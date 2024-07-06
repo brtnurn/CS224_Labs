@@ -1,0 +1,327 @@
+CS224
+Lab 3
+Section 6
+Bertan Uran
+22102541
+15/03/2024
+
+	.text
+#------------------------- Prelim Q1 -----------------------
+main:
+	la	$a0, main
+	la	$a1, done
+	
+	jal	count
+
+	move	$s0, $v0
+	
+	li	$v0, 4
+	la	$a0, msgMain
+	syscall
+	
+	li	$v0, 1
+	add	$a0, $s0, $0
+	syscall
+	
+	la	$a0, count
+	la	$a1, subDone
+	
+	jal	count
+	
+	move	$s1, $v0
+	
+	li	$v0, 4
+	la	$a0, msgSub
+	syscall
+	
+	li	$v0, 1
+	add	$a0, $s1, $0
+	syscall
+done:
+	li	$v0, 10
+	syscall
+	
+count:
+	addi	$sp, $sp, -20
+	sw	$s0, 16($sp)
+	sw	$s1, 12($sp)
+	sw	$s2, 8($sp)
+	sw	$s3, 4($sp)
+	sw	$s4, 0($sp)
+	
+	add	$s0, $a0, $0		# s0 = start addr
+	
+loop:	bgt	$s0, $a1, end
+	lw	$s1, 0($s0)
+	sll	$s3, $s1, 26		# funct
+	srl	$s2, $s1, 26		# opcode
+	beq	$s2, 0xd, inc
+	beq	$s2, 0x23, inc
+	beq	$s2, 0, checkFunct
+next:	addi	$s0, $s0, 4
+	j	loop
+checkFunct:
+	beq	$s3, 0x80000000, inc
+	j	next
+inc:
+	addi	$s4, $s4, 1
+	j	next	
+end:	
+	add	$v0, $s4, $0
+	lw	$s4, 0($sp)
+	lw	$s3, 4($sp)
+	lw	$s2, 8($sp)
+	lw	$s1, 12($sp)
+	lw	$s0, 16($sp)
+	addi	$sp, $sp, 20
+subDone:
+	jr	$ra
+	
+	.data
+msg:		.asciiz "Total number of `add`, `ori, and `lw` instructions is: "
+msgMain:	.asciiz "Number of `add`, `ori, and `lw` instructions in MAIN is: "
+msgSub:		.asciiz "\nNumber of `add`, `ori, and `lw` instructions in SUBPROGRAM is: "
+	.text
+#-------------------------- Prelim Q2 ----------------------------	
+main:
+	li	$v0, 4
+	la	$a0, dividendMsg
+	syscall
+	
+	li	$v0, 5
+	syscall
+	add	$s0, $0, $v0
+	
+	li	$v0, 4
+	la	$a0, divisorMsg
+	syscall
+	
+	li	$v0, 5
+	syscall
+	add	$s1, $0, $v0
+	
+	add	$a0, $0, $s0
+	add	$a1, $0, $s1
+	
+	jal	divide
+	move	$s2, $v0
+	
+	li	$v0, 4
+	la	$a0, quotientMsg
+	syscall
+	
+	li	$v0, 1
+	move	$a0, $s2
+	syscall
+	
+	li	$v0, 4
+	la	$a0, remainderMsg
+	syscall
+	
+	li	$v0, 1
+	move	$a0, $v1
+	syscall
+	
+	li	$v0, 4
+	la	$a0, contMsg
+	syscall
+	
+	li	$v0, 5
+	syscall
+	beq	$v0, 1, main
+	
+	li	$v0, 10
+	syscall
+divide:
+	addi	$sp, $sp, -4
+	sw	$ra, 0($sp)
+	bge	$a0, $a1, else
+	addi	$v0, $0, 0
+	add	$v1, $a0, $0
+	addi	$sp, $sp, 4
+	jr	$ra
+else:
+	sub	$a0, $a0, $a1
+	jal	divide
+	addi	$v0, $v0, 1
+	lw	$ra, 0($sp)
+	addi	$sp, $sp, 4
+	jr	$ra
+	
+	.data
+dividendMsg:	.asciiz "Enter a dividend: "
+divisorMsg:	.asciiz "Enter a divisor: "
+quotientMsg:	.asciiz "The quotient is: "
+remainderMsg:	.asciiz	"\nThe remainder is: "
+contMsg:	.asciiz "\nDo you want to coninue (1 for yes): "
+
+	.text
+	.globl createLL
+createLL:
+	addi	$sp, $sp, -16
+	sw	$s0, 12($sp)
+	sw	$s1, 8($sp)
+	sw	$s2, 4($sp)
+	sw	$s3, 0($sp)
+	
+	add 	$s0, $0, $a0		# size
+	addi	$s1, $0, 1		# counter
+	li	$a0, 8
+	li	$v0, 9
+	syscall
+	add	$s2, $v0, $0		# pointer to head
+	add	$s3, $v0, $0		# pointer
+	sw	$s1, 4($s2)
+insert:
+	beq	$s0, $s1, done
+	addi	$s1, $s1, 1
+	li	$a0, 8
+	li	$v0, 9
+	syscall
+	sw	$v0, 0($s2)
+	add	$s2, $0, $v0
+	sw	$s1, 4($s2)
+	j	insert
+done:
+	sw	$0, 0($s2)
+	move	$v0, $s3
+
+	lw	$s3, 0($sp)
+	lw	$s2, 4($sp)
+	lw	$s1, 8($sp)
+	lw	$s0, 12($sp)
+	addi	$sp, $sp, 16
+	jr	$ra
+	
+	
+	.text
+	.globl printLL
+main:
+	li	$a0, 10
+	jal	createLL
+	move	$a0, $v0
+	jal	printLL
+	li	$v0, 10
+	syscall
+	
+printLL:
+	add	$s0, $a0, $0
+	
+rec:	addi	$sp, $sp, -8
+	sw	$s0, 4($sp)
+	sw	$ra, 0($sp)
+	bne	$s0, $0, else
+	addi	$sp, $sp, 8
+	jr	$ra
+else:
+	lw	$s0, 0($s0)
+	jal	rec
+	lw	$s0, 4($sp)
+	
+	li	$v0, 1
+	lw	$a0, 4($s0)
+	syscall
+	
+	li	$v0, 4
+	la	$a0, comma
+	syscall
+	
+	lw	$ra, 0($sp)
+	addi	$sp, $sp, 8
+	jr	$ra
+	
+	.data
+comma:	.asciiz ", "
+
+	.text
+	
+main:
+	li	$a0, 10
+	jal	createLL
+	move	$a0, $v0
+	jal	copyLL
+	move	$a0, $v0
+	jal	printLL
+	li	$v0, 10
+	syscall
+
+copyLL:
+	addi	$sp, $sp, -16
+	sw	$s0, 12($sp)
+	sw	$s1, 8($sp)
+	sw	$s2, 4($sp)
+	sw	$s3, 0($sp)
+	
+	add	$s0, $a0, $0		# original ll
+	li	$a0, 8
+	li	$v0, 9
+	syscall
+	add	$s1, $v0, $0		# copy ll
+	add	$s3, $v0, $0 
+	
+copy:	lw	$s2, 4($s0)
+	sw	$s2, 4($s1)
+	lw	$s0, 0($s0)
+	beq	$s0, $0, doneCopy
+	li	$a0, 8
+	li	$v0, 9
+	syscall
+	sw	$v0, 0($s1)
+	move	$s1, $v0
+	j	copy
+doneCopy:
+	move	$v0, $s3
+	addi	$sp, $sp, 16
+	lw	$s3, 0($sp)
+	lw	$s2, 4($sp)
+	lw	$s1, 8($sp)
+	lw	$s0, 12($sp)
+	jr	$ra
+
+	.text
+	
+main:
+	li	$a0, 10
+	jal	createLL
+	move	$a0, $v0
+	jal	dupLL
+	move	$a0, $v0
+	jal	printLL
+	li	$v0, 10
+	syscall
+	
+
+dupLL:
+	add	$s0, $a0, $0
+	li	$a0, 8
+	li	$v0, 9
+	syscall
+	add	$s1, $v0, $0
+dupLLRec:	
+	addi	$sp, $sp, -12
+	sw	$s0, 8($sp)
+	sw	$s1, 4($sp)
+	sw	$ra, 0($sp)
+	bne	$s0, $0, dupElse
+	sw	$0, 0($s1)
+	addi	$sp, $sp, 12
+	jr	$ra
+dupElse:
+	lw	$s0, 0($s0)
+	beq	$s0, $0, skip
+	li	$a0, 8
+	li	$v0, 9
+	syscall
+	sw	$v0, 0($s1)
+	move	$s1, $v0
+skip:	jal	dupLLRec
+	
+	lw	$s0, 8($sp)
+	lw	$s1, 4($sp)
+	lw	$s2, 4($s0)
+	sw	$s2, 4($s1)
+	lw	$ra, 0($sp)
+	addi	$sp, $sp, 12
+	add	$v0, $0, $s1
+	jr	$ra
+
